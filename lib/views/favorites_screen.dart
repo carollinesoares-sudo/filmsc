@@ -13,6 +13,7 @@ class FavoritesScreen extends StatefulWidget {
 class FavoritesScreenState extends State<FavoritesScreen> {
   List<Movie> _favorites = [];
   String _userName = '';
+  String _profileId = 'default';
   int _avatarIndex = 0;
   bool _isLoading = true;
 
@@ -31,10 +32,14 @@ class FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<void> _loadUserDataAndFavorites() async {
     final prefs = await SharedPreferences.getInstance();
-    final favorites = await DBHelper.instance.getFavoriteMovies();
+    final profileId = prefs.getString('activeProfileId') ?? 'default';
+    final favorites = await DBHelper.instance.getFavoriteMovies(
+      profileId: profileId,
+    );
 
     setState(() {
       _userName = prefs.getString('userName') ?? 'Usuário';
+      _profileId = profileId;
       _avatarIndex = prefs.getInt('userAvatarIndex') ?? 0;
       _favorites = favorites;
       _isLoading = false;
@@ -44,8 +49,38 @@ class FavoritesScreenState extends State<FavoritesScreen> {
   Future<void> reload() => _loadUserDataAndFavorites();
 
   void _removeFavorite(int id) async {
-    await DBHelper.instance.removeFavorite(id);
+    await DBHelper.instance.removeFavorite(id, profileId: _profileId);
     _loadUserDataAndFavorites();
+  }
+
+  void _showMovieDetails(Movie movie) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF151A22),
+        title: Text(movie.title),
+        content: SingleChildScrollView(
+          child: Text(
+            movie.overview.isEmpty ? 'Sinopse indisponível.' : movie.overview,
+            style: const TextStyle(color: Color(0xFFD5DBE5), height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              _showRatingDialog(movie);
+            },
+            icon: const Icon(Icons.star_outline),
+            label: const Text('Avaliar'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showRatingDialog(Movie movie) {
@@ -99,6 +134,7 @@ class FavoritesScreenState extends State<FavoritesScreen> {
                     await DBHelper.instance.updateMovieRating(
                       movie.id,
                       currentRating,
+                      profileId: _profileId,
                     );
                     if (!context.mounted) return;
                     Navigator.pop(context);
@@ -120,7 +156,6 @@ class FavoritesScreenState extends State<FavoritesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Minha Lista')),
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF00A8E1)),
@@ -191,16 +226,19 @@ class FavoritesScreenState extends State<FavoritesScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      movie.fullImageUrl,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => Container(
-                                        color: Colors.grey[900],
-                                        child: const Icon(
-                                          Icons.movie,
-                                          color: Colors.grey,
+                                    child: InkWell(
+                                      onTap: () => _showMovieDetails(movie),
+                                      child: Image.network(
+                                        movie.fullImageUrl,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => Container(
+                                          color: Colors.grey[900],
+                                          child: const Icon(
+                                            Icons.movie,
+                                            color: Colors.grey,
+                                          ),
                                         ),
                                       ),
                                     ),

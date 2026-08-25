@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'search_screen.dart';
 import 'favorites_screen.dart';
+import 'profiles_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +23,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text(_currentIndex == 0 ? 'Descobrir' : 'Minha Lista'),
+        actions: [
+          IconButton(
+            tooltip: 'Perfis',
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilesScreen()),
+            ),
+          ),
+        ],
+      ),
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

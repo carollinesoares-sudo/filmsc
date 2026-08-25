@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:math';
 import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -28,6 +29,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final prefs = await SharedPreferences.getInstance();
+    final profileId =
+        DateTime.now().microsecondsSinceEpoch.toString() +
+        Random().nextInt(1000).toString();
+    await prefs.setString('activeProfileId', profileId);
     await prefs.setString('userName', _nameController.text.trim());
     await prefs.setInt('userAvatarIndex', _selectedAvatar);
 

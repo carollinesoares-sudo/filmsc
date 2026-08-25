@@ -2,12 +2,16 @@ class Movie {
   final int id;
   final String title;
   final String posterPath;
+  final String backdropPath;
+  final String overview;
   double rating;
 
   Movie({
     required this.id,
     required this.title,
     required this.posterPath,
+    this.backdropPath = '',
+    this.overview = '',
     this.rating = 0.0,
   });
 
@@ -17,7 +21,11 @@ class Movie {
       id: json['id'] ?? 0,
       title: json['title'] ?? json['name'] ?? 'Sem título',
       posterPath: json['poster_path'] ?? '',
-      rating: (json['vote_average'] as num?)?.toDouble() ?? 0.0, // Corrigido: vote_average
+      backdropPath: json['backdrop_path'] ?? '',
+      overview: json['overview'] ?? '',
+      rating:
+          (json['vote_average'] as num?)?.toDouble() ??
+          0.0, // Corrigido: vote_average
     );
   }
 
@@ -27,6 +35,8 @@ class Movie {
       id: map['id'],
       title: map['title'],
       posterPath: map['posterPath'],
+      backdropPath: map['backdropPath'] ?? '',
+      overview: map['overview'] ?? '',
       rating: (map['rating'] as num).toDouble(),
     );
   }
@@ -37,15 +47,18 @@ class Movie {
       'id': id,
       'title': title,
       'posterPath': posterPath,
+      'backdropPath': backdropPath,
+      'overview': overview,
       'rating': rating,
     };
   }
 
   // Monta a URL completa para exibir o pôster
   String get fullImageUrl {
-    if (posterPath.isEmpty) {
-      return 'https://via.placeholder.com/500x750?text=Sem+Poster';
+    final imagePath = posterPath.isNotEmpty ? posterPath : backdropPath;
+    if (imagePath.isEmpty) {
+      return 'https://placehold.co/500x750/151A22/FFFFFF?text=Sem+imagem';
     }
-    return 'https://image.tmdb.org/t/p/w500$posterPath';
+    return 'https://image.tmdb.org/t/p/w500$imagePath';
   }
 }

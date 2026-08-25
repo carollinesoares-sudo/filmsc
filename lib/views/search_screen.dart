@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../database/db_helper.dart';
@@ -35,7 +36,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _toggleFavorite(Movie movie) async {
     try {
-      await DBHelper.instance.addFavoriteMovie(movie);
+      final prefs = await SharedPreferences.getInstance();
+      final profileId = prefs.getString('activeProfileId') ?? 'default';
+      await DBHelper.instance.addFavoriteMovie(movie, profileId: profileId);
       if (!mounted) return;
       setState(() => _savedMovieIds.add(movie.id));
       ScaffoldMessenger.of(context).showSnackBar(
@@ -53,10 +56,40 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  void _showMovieDetails(Movie movie) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF151A22),
+        title: Text(movie.title),
+        content: SingleChildScrollView(
+          child: Text(
+            movie.overview.isEmpty ? 'Sinopse indisponível.' : movie.overview,
+            style: const TextStyle(color: Color(0xFFD5DBE5), height: 1.4),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fechar'),
+          ),
+          if (!_savedMovieIds.contains(movie.id))
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _toggleFavorite(movie);
+              },
+              icon: const Icon(Icons.bookmark_add_outlined),
+              label: const Text('Minha Lista'),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('CineFavorite')),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -152,15 +185,18 @@ class _SearchScreenState extends State<SearchScreen> {
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    Image.network(
-                                      movie.fullImageUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, _, _) => Container(
-                                        color: const Color(0xFF252C38),
-                                        child: const Icon(
-                                          Icons.movie_outlined,
-                                          color: Colors.grey,
-                                          size: 36,
+                                    InkWell(
+                                      onTap: () => _showMovieDetails(movie),
+                                      child: Image.network(
+                                        movie.fullImageUrl,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, _, _) => Container(
+                                          color: const Color(0xFF252C38),
+                                          child: const Icon(
+                                            Icons.movie_outlined,
+                                            color: Colors.grey,
+                                            size: 36,
+                                          ),
                                         ),
                                       ),
                                     ),
